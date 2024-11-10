@@ -14,8 +14,7 @@ using namespace std;
 #pragma GCC target("avx")
 #pragma GCC optimize("O3")
 #pragma GCC optimize("unroll-loops")
-// cin cout の結びつけ解除, stdioと同期しない(入出力非同期化)
-// cとstdの入出力を混在させるとバグるので注意
+
 struct Fast {
     Fast()
     {
@@ -26,11 +25,12 @@ struct Fast {
     }
 } fast;
 
-class Display {
+class Game {
 public:
     int x = 3, y;
     int nextMino = -1;
     int nowMino, nowState;
+    clock_t game_start_time = clock();
 
     string map[22][40] = {
         { " ", "_", "_", "_", "_", "_", "_", "_", "_", "_", "_", "_", "_", "_",
@@ -321,6 +321,12 @@ public:
         return true;
     }
 
+    
+    void game_over(){
+        cout << "finish" << endl;
+        exit(0);
+    }
+
     bool turn_mino(int direction)
     {
         int temp = nowState;
@@ -379,6 +385,7 @@ public:
         while (now - start < n) {
             if (kbhit()) {
                 keyState = getch();
+                while(kbhit()){getch();};
                 Sleep(100);
             } else {
                 OK = true;
@@ -396,6 +403,13 @@ public:
                 print_map();
             } else if (keyState == "s" && check_CD(x, y + 1, nowState)) {
                 y++;
+                OK = false;
+                upgrade_mino();
+                print_map();
+            } else if (keyState == "w"){
+                while(check_CD(x,y + 1, nowState)){
+                    y++;
+                }
                 OK = false;
                 upgrade_mino();
                 print_map();
@@ -449,8 +463,7 @@ public:
         }
     }
 
-    void
-    print_map()
+    void print_map()
     {
         system("cls");
         cout << endl;
@@ -474,12 +487,24 @@ public:
                     }
                 }
 
+        clock_t now = clock();
+
+        int elapsed_secs = (now-game_start_time)/1000;
+
+        map[20][31]=to_string(elapsed_secs/60/10);
+        map[20][32]=to_string(elapsed_secs/60%10);
+        map[20][34]=to_string(elapsed_secs%60/10);
+        map[20][35]=to_string(elapsed_secs%60%10);
+
+        string output ="";
         for (int i = 0; i < 22; i++) {
             for (int j = 0; j < 40; j++) {
-                cout << map[i][j];
+                output+=map[i][j];
             }
-            cout << endl;
+            output+="\n";
         }
+        output+="a: move left , d: move right , s: move down ,\nw: drop , q: rotate left , e: rotate right , \nx: hold , Space: quit\n";
+        cout << output;
 
         for (int i = 0; i < 20; i++)
             for (int j = 0; j < 20; j++)
@@ -525,10 +550,8 @@ public:
                 }
             }
     }
-    // 0x62f0c4 0x62f11c 0x62f174 0x62f1cc 0x62f224 0x62f27c 0x62f2d4 0x62f32c 0x62f384 0x62f3dc 0x62f434 0x62f48c 0x62f4e4 0x62f53c 0x62f594 0x62f5ec 0x62f644 0x62f69c 0x62f6f4 0x62f74c
 
-    void
-    start_mino()
+    void start_mino()
     {
         nowState = 0;
         x = 3;
@@ -536,6 +559,9 @@ public:
         nowMino = nextMinoArr[0];
         set_mino(x, y, minoArr[nowMino][nowState]);
         nextMinoArr.erase(nextMinoArr.begin());
+        if(!check_CD(x,y,nowState)){
+            game_over();
+        }
     }
 
     int upgrade_mino()
@@ -576,44 +602,26 @@ public:
         }
         set_mino(x, y, minoArr[nowMino][nowState]);
         return true;
-        /*
-        y++;
-        for (int i = 0; i < 4; i++)
-        {
-            for (int j = 0; j < 4; j++)
-            {
-
-            if (field[y + i + 1][2 * (x + j) + 1] > 0 &&
-        minoArr[nowMino][nowState][i][j] == 1)
-            {
-                y--;
-                set_field(x, y, minoArr[nowMino][nowState]);
-                return false;
-            }
-        }
-        }
-        set_mino(x, y, minoArr[nowMino][nowState]);
-        return true;
-        */
     }
+
 };
 
 int main()
 {
-    Display test;
+    Game game;
     cout << "start" << endl;
     int time = 500;
-    for (int j = 0; j < 100; j++) {
+    while(1) {
 
-        test.update_next_mino();
-        test.start_mino();
-        test.print_map();
-        test.y++;
-        test.wait(time);
-        while (test.upgrade_mino()) {
-            test.print_map();
-            test.wait(time);
-            test.y++;
+        game.update_next_mino();
+        game.start_mino();
+        game.print_map();
+        game.y++;
+        game.wait(time);
+        while (game.upgrade_mino()) {
+            game.print_map();
+            game.wait(time);
+            game.y++;
         }
         time = time * 99 / 100;
     }

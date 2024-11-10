@@ -1,0 +1,8 @@
+{
+  "editor.acceptSuggestionOnEnter": "on",
+  "cSpell.words": ["kbhit", "Mino"],
+  "C_Cpp.errorSquiggles": "disabled",
+  "files.associations": {
+    "xlocmon": "cpp"
+  }
+}
